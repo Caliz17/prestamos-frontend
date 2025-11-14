@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard</title>
+    <link rel="icon" href="https://images.icon-icons.com/474/PNG/512/wallet_46876.png" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -30,7 +31,7 @@
             <div class="dropdown dropdown-end">
                 <label tabindex="0" class="btn btn-ghost btn-circle avatar">
                     <div class="w-10 rounded-full">
-                        <img src="https://i.pravatar.cc/100?img=15">
+                        <img src="https://images.icon-icons.com/2643/PNG/512/male_boy_person_people_avatar_icon_159358.png">
                     </div>
                 </label>
 
