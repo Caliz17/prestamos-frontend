@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use Illuminate\Http\Client\ConnectionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
@@ -26,52 +27,58 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // 1️⃣ Enviar credenciales a la API
-        $response = Http::post(env('API_URL') . '/login', [
-            'email' => $request->email,
-            'password' => $request->password,
-        ]);
+        try {
 
-        if ($response->failed()) {
-            return back()->withErrors([
-                'email' => 'Credenciales inválidas. Verifica tu correo y contraseña.',
-            ]);
+            // Llamada con timeout y manejo automático de errores
+            $response = Http::timeout(5)
+                ->acceptJson()
+                ->post(env('API_URL') . '/login', [
+                    'email' => $request->email,
+                    'password' => $request->password,
+                ]);
+
+        } catch (ConnectionException $e) {
+
+            return back()
+                ->withErrors([
+                    'server' => 'Error del servidor, por favor intenta más tarde.'
+                ])
+                ->withInput();
         }
 
-        // 2️⃣ Guardar token en sesión
-        $token = $response->json()['access_token'];
+        // Si la API responde 401 o no manda token
+        if ($response->status() === 401 || !$response->json('access_token')) {
+            return back()
+                ->withErrors(['email' => 'Credenciales incorrectas'])
+                ->withInput();
+        }
+
+        // Token ok
+        $token = $response->json('access_token');
         session(['api_token' => $token]);
 
-        // 3️⃣ Obtener perfil del usuario desde la API
+        // Obtener info del usuario
         $userResponse = Http::withToken($token)->get(env('API_URL') . '/me');
 
         if ($userResponse->failed()) {
             return back()->withErrors([
-                'email' => 'No se pudo obtener la información del usuario desde la API.',
+                'server' => 'Error del servidor: No se pudo obtener información del usuario.'
             ]);
         }
 
         $apiUser = $userResponse->json();
         session(['user' => $apiUser]);
 
-        /**
-         * 4️⃣ Buscar usuario localmente
-         * Si NO existe → LO CREAMOS automáticamente
-         */
-        $localUser = User::where('email', $apiUser['email'])->first();
+        // Buscar usuario local
+        $localUser = \App\Models\User::where('email', $apiUser['email'])->first();
 
         if (!$localUser) {
-            $localUser = User::create([
-                'name'  => $apiUser['name'] ?? 'Usuario API',
-                'email' => $apiUser['email'],
-                'password' => bcrypt('password-temporal'), 
+            return back()->withErrors([
+                'email' => 'El usuario existe en la API pero no en el sistema local.'
             ]);
         }
 
-        // 5️⃣ Autenticar usuario localmente
         Auth::login($localUser);
-
-        // 6️⃣ Regenerar sesión
         $request->session()->regenerate();
 
         return redirect()->route('dashboard');

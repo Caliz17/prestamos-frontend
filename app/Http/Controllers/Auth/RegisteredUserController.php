@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Auth;
 
+use Illuminate\Http\Client\ConnectionException;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
+use App\Models\User;
 
 class RegisteredUserController extends Controller
 {
@@ -24,27 +23,50 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
+        // Validación interna
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
+            'password' => ['required', 'confirmed'],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        try {
+            // Enviar registro a la API
+            $response = Http::timeout(5)
+                ->acceptJson()
+                ->post(env('API_URL') . '/register', [
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => $request->password,
+                ]);
 
-        event(new Registered($user));
+        } catch (\Exception $e) {
+            return back()
+                ->withErrors(['server' => 'No se pudo conectar con el servidor.'])
+                ->withInput();
+        }
 
-        Auth::login($user);
+        // Manejo de errores de la API
+        if ($response->failed()) {
 
-        return redirect(route('dashboard', absolute: false));
+            $error = $response->json('message') ?? 'Error desconocido';
+
+            // Traducir mensajes comunes
+            if (str_contains($error, 'The email has already been taken')) {
+                $error = 'El correo electrónico ya está registrado.';
+            }
+
+            return back()
+                ->withErrors(['email' => $error])
+                ->withInput();
+        }
+
+        // Si llegó aquí, se registró correctamente
+        return redirect()->route('login')
+            ->with('success', 'Tu cuenta ha sido creada. Ahora puedes iniciar sesión.');
     }
+
 }
