@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Http;
 
 class PasswordResetLinkController extends Controller
 {
@@ -23,22 +24,31 @@ class PasswordResetLinkController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    # REVISAR PORQUE NO ESTA ALMACENANDO BIEN LOS NUEVA SCONTRACENIAS
+    public function store(Request $request)
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
+        $request->validate(['email' => ['required', 'email']]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $response = Http::withHeaders([
+                    'Accept' => 'application/json',
+                ])
+                ->post(env('API_URL') . '/forgot-password', [
+                    'email' => $request->email,
+                ]);
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'server' => 'No se pudo conectar con el servidor, intenta más tarde.'
+            ]);
+        }
+
+        if ($response->failed()) {
+            return back()->withErrors([
+                'email' => $response->json('message') ?? 'No se pudo enviar el correo.'
+            ]);
+        }
+
+        return back()->with('status', 'Se envió un enlace a tu correo.');
     }
 }

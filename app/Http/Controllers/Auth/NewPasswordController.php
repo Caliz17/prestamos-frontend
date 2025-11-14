@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Http;
 
 class NewPasswordController extends Controller
 {
@@ -36,27 +37,47 @@ class NewPasswordController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        try {
+            $response = Http::withHeaders([
+                    'Accept' => 'application/json',
+                ])
+                ->post(env('API_URL') . '/reset-password', [
+                    'token' => $request->token,
+                    'email' => $request->email,
+                    'password' => $request->password,
+                    'password_confirmation' => $request->password_confirmation,
+                ]);
 
-                event(new PasswordReset($user));
+            if ($response->successful()) {
+                return redirect()->route('login')
+                    ->with('status', 'Contraseña restablecida correctamente.');
             }
-        );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+            // Manejar diferentes tipos de errores
+            $errorData = $response->json();
+            
+            if ($response->status() === 422) {
+                // Error de validación
+                $errorMessage = $errorData['message'] ?? 'Datos inválidos.';
+                if (isset($errorData['errors']['email'])) {
+                    $errorMessage = $errorData['errors']['email'][0];
+                }
+            } else if ($response->status() === 400) {
+                // Token inválido o expirado
+                $errorMessage = $errorData['message'] ?? 'Token inválido o expirado.';
+            } else {
+                // Error genérico
+                $errorMessage = $errorData['message'] ?? 'Error del servidor.';
+            }
+
+            return back()->withInput($request->only('email'))
+                        ->withErrors(['email' => $errorMessage]);
+
+        } catch (\Exception $e) {
+            \Log::error('Password reset error: ' . $e->getMessage());
+            return back()->withErrors([
+                'server' => 'No se pudo conectar con el servidor, intenta más tarde.'
+            ]);
+        }
     }
 }

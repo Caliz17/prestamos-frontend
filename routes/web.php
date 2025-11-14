@@ -2,7 +2,22 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
+Route::get('reset-password/{token}', function (Request $request, $token) {
+    $email = $request->query('email');
+    
+    if (!$email) {
+        abort(400, 'Falta parámetro email');
+    }
+    
+    return view('auth.reset-password', [
+        'token' => $token,
+        'email' => $email
+    ]);
+})->name('password.reset-custom'); // Usa un nombre diferente
+
+// Luego la ruta principal
 Route::get('/', function () {
     return redirect()->route('login');
 });

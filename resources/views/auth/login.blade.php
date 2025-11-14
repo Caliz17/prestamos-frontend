@@ -54,6 +54,10 @@
                 <input id="password" type="password" name="password" required
                     class="w-full rounded-md bg-white/20 text-white border border-white/20 focus:border-indigo-400 focus:ring-indigo-400 px-3 py-2 placeholder-gray-300"
                     placeholder="••••••••" />
+                <a href="{{ route('password.request') }}" class="font-semibold text-indigo-400 hover:text-indigo-300">
+                    ¿Olvidaste tu contraseña?
+                </a>
+
             </div>
 
             <!-- Botón -->
