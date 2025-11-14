@@ -26,7 +26,7 @@
                 </label>
             </div>
 
-            <div class="flex-1 px-2 font-bold text-lg">Prestamos - Dashboard</div>
+            <div class="flex-1 px-2 font-bold text-lg">Prestamos {{ $section }}</div>
 
             <div class="dropdown dropdown-end">
                 <label tabindex="0" class="btn btn-ghost btn-circle avatar">
@@ -40,8 +40,8 @@
 
                     <li class="menu-title">Hola, {{ auth()->user()->name }}</li>
 
-                    <li><a>Perfil</a></li>
-                    <li><a>Ajustes</a></li>
+                    <li><a href="{{ route('profile.edit') }}">Perfil</a></li>
+                    <!-- <li><a href="#">Ajustes</a></li> -->
 
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
