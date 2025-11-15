@@ -22,9 +22,8 @@ Route::get('reset-password/{token}', function (Request $request, $token) {
     ]);
 })->name('password.reset-custom');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [App\Http\Controllers\Front\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     // Perfil de usuario
