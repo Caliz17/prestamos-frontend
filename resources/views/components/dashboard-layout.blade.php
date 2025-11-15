@@ -75,8 +75,9 @@
             <h2 class="menu-title text-lg mb-2">Menú</h2>
             <li><a href="{{ route('dashboard') }}">📊 Dashboard</a></li>
             <li><a href="{{ route('clientes.index') }}">👤 Clientes</a></li>
-            <li><a>💸 Préstamos</a></li>
-            <li><a>🧾 Pagos</a></li>
+            <li><a href="{{ route('solicitudes.index') }}">📝 Solicitudes</a></li>
+            <li><a href="{{ route('prestamos.index') }}">💸 Préstamos</a></li>
+            <li><a href="{{ route('pagos.index') }}">🧾 Pagos</a></li>
         </ul>
     </div>
 
