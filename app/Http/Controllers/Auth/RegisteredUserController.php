@@ -41,6 +41,7 @@ class RegisteredUserController extends Controller
                     'name' => $request->name,
                     'email' => $request->email,
                     'password' => $request->password,
+                    'password_confirmation' => $request->password_confirmation,
                 ]);
 
         } catch (\Exception $e) {
