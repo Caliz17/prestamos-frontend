@@ -12,7 +12,7 @@ class SolicitudController extends Controller
 
     public function __construct()
     {
-        $this->api = config('services.api.url', 'http://localhost:8000');
+        $this->api = config('services.api.url', 'http://prestamos-backend:8000');
     }
 
     private function token()

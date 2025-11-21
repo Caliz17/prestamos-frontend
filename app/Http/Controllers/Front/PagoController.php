@@ -12,7 +12,7 @@ class PagoController extends Controller
 
     public function __construct()
     {
-        $this->api = env('BACKEND_API_URL', 'http://localhost:8000/api');
+        $this->api = env('BACKEND_API_URL', 'http://prestamos-backend:8000/api');
     }
 
     private function token()

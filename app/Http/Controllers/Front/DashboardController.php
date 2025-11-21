@@ -13,7 +13,7 @@ class DashboardController extends Controller
 
     public function __construct()
     {
-        $this->apiBaseUrl = env('BACKEND_API_URL', 'http://localhost:8000/api');
+        $this->apiBaseUrl = env('BACKEND_API_URL', 'http://prestamos-backend:8000/api');
     }
 
     public function index()
